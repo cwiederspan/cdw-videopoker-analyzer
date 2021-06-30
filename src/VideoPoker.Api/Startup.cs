@@ -53,6 +53,7 @@ namespace VideoPoker.Api {
 
             app.UseEndpoints(endpoints => {
 
+                // Setup a default route that serves up metadata
                 endpoints.MapGet("/", async context => {
                     var builder = new StringBuilder();
                     builder.AppendLine($"Time to Build Data: {this.AllHandsLoadTime.TotalSeconds.ToString("F2")} secs");
@@ -60,11 +61,10 @@ namespace VideoPoker.Api {
                     await context.Response.WriteAsync(builder.ToString());
                 });
 
-
-
-                // Setup a route for a GET to test the read/download performance
+                // Setup a route to hit the Analyze API
                 endpoints.MapGet("/analyze", async context => {
 
+                    var builder = new StringBuilder();
                     var stopwatch = Stopwatch.StartNew();
 
                     var data = context.Request.Query["cards"].ToString();
@@ -72,49 +72,53 @@ namespace VideoPoker.Api {
 
                     var results = new ConcurrentDictionary<string, double>();
 
+                    builder.AppendLine($"Processing checkpoint #1 at {stopwatch.ElapsedMilliseconds} ms.");
+                    
                     Enumerable.Range(0, 32).AsParallel().ForAll(i => {
 
                         string holdPattern = Convert.ToString(i, 2).PadLeft(5, '0');
 
-                        List<Hand> matchingHands = (
-                            from h in this.AllHands
-                            where h.Contains(cards[0]) == (holdPattern.Substring(0, 1) == "1")
-                               && h.Contains(cards[1]) == (holdPattern.Substring(1, 1) == "1")
-                               && h.Contains(cards[2]) == (holdPattern.Substring(2, 1) == "1")
-                               && h.Contains(cards[3]) == (holdPattern.Substring(3, 1) == "1")
-                               && h.Contains(cards[4]) == (holdPattern.Substring(4, 1) == "1")
-                            select h
-                        ).ToList();
+                        // If holding, must include that card. If discarding, must NOT include that card.
+                        //List<Hand> matchingHands = (
+                        //    from h in this.AllHands
+                        //    where h.Contains(cards[0]) == (holdPattern.Substring(0, 1) == "1")
+                        //       && h.Contains(cards[1]) == (holdPattern.Substring(1, 1) == "1")
+                        //       && h.Contains(cards[2]) == (holdPattern.Substring(2, 1) == "1")
+                        //       && h.Contains(cards[3]) == (holdPattern.Substring(3, 1) == "1")
+                        //       && h.Contains(cards[4]) == (holdPattern.Substring(4, 1) == "1")
+                        //    select h
+                        //).ToList();
+
+                        //var matchingHands = this.AllHands
+                        //    .Where(h => h.Contains(cards[0]) == (holdPattern.Substring(0, 1) == "1"))
+                        //    .Where(h => h.Contains(cards[1]) == (holdPattern.Substring(1, 1) == "1"))
+                        //    .Where(h => h.Contains(cards[2]) == (holdPattern.Substring(2, 1) == "1"))
+                        //    .Where(h => h.Contains(cards[3]) == (holdPattern.Substring(3, 1) == "1"))
+                        //    .Where(h => h.Contains(cards[4]) == (holdPattern.Substring(4, 1) == "1"))
+                        //    .ToList();
+
+                        // Precalculate the hold pattern values
+                        var hold0 = (holdPattern.Substring(0, 1) == "1");
+                        var hold1 = (holdPattern.Substring(1, 1) == "1");
+                        var hold2 = (holdPattern.Substring(2, 1) == "1");
+                        var hold3 = (holdPattern.Substring(3, 1) == "1");
+                        var hold4 = (holdPattern.Substring(4, 1) == "1");
+
+                        var matchingHands = this.AllHands
+                            .Where(h => h.Contains(cards[0]) == hold0)
+                            .Where(h => h.Contains(cards[1]) == hold1)
+                            .Where(h => h.Contains(cards[2]) == hold2)
+                            .Where(h => h.Contains(cards[3]) == hold3)
+                            .Where(h => h.Contains(cards[4]) == hold4)
+                            .ToList();
 
                         double score = matchingHands.Average(x => x.Score);
 
                         bool added = results.TryAdd(holdPattern, score);
                     });
 
-                    /*
-                    Parallel.For(0, 32,
-                        i => {
+                    builder.AppendLine($"Processing checkpoint #2 at {stopwatch.ElapsedMilliseconds} ms.");
 
-                            string holdPattern = Convert.ToString(i, 2).PadLeft(5, '0');
-
-                            List<Hand> matchingHands = (
-                                from h in this.AllHands
-                                where h.Contains(cards[0]) == (holdPattern.Substring(0, 1) == "1")
-                                   && h.Contains(cards[1]) == (holdPattern.Substring(1, 1) == "1")
-                                   && h.Contains(cards[2]) == (holdPattern.Substring(2, 1) == "1")
-                                   && h.Contains(cards[3]) == (holdPattern.Substring(3, 1) == "1")
-                                   && h.Contains(cards[4]) == (holdPattern.Substring(4, 1) == "1")
-                                select h
-                            ).ToList();
-
-                            double score = matchingHands.Average(x => x.Score);
-
-                            bool added = results.TryAdd(holdPattern, score);
-                        }
-                    );
-                    */
-
-                    var builder = new StringBuilder();
                     results.OrderByDescending(r => r.Value)
                         .Select(r => $"{data}_{r.Key}_{r.Value.ToString("F5")}")
                         .ToList()
