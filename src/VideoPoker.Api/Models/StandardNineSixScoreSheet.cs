@@ -8,7 +8,7 @@ namespace VideoPoker.Api.Models {
     public class StandardNineSixScoreSheet : IScoreSheet {
 
         // *** Payouts *** //
-        // Royal Flush = x250
+        // Royal Flush = x800 (if playing 5 coins, so use that. Otherwise x250)
         // Straight Flush = x50
         // Four of a Kind = x25
         // Full House = x9 (or often x8)
@@ -18,7 +18,8 @@ namespace VideoPoker.Api.Models {
         // Two Pairs =  x2
         // Jacks or Better = x1
 
-        public int RoyalFlush { get { return 250; } }
+        public int RoyalFlush { get { return 800; } }
+        // public int RoyalFlush { get { return 250; } }
 
         public int StraightFlush { get { return 50; } }
 
