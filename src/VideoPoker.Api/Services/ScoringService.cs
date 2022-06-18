@@ -35,7 +35,9 @@ namespace VideoPoker.Api.Services {
 
                                 var score = this.ScoreHand(scoreSheet, cards);
 
-                                allHands.Add(new Hand(cards, score));
+                                var label = this.LabelHand(cards);
+
+                                allHands.Add(new Hand(cards, score, label));
                             }
                         }
                     }
@@ -43,6 +45,33 @@ namespace VideoPoker.Api.Services {
             }
 
             return allHands;
+        }
+
+        private string LabelHand(List<Card> cards) {
+
+            string[] suits = new string[4];
+
+            suits[0] = cards.Count(c => c.Suit == SuitType.Clubs).ToString("N0") + "C";
+            suits[1] = cards.Count(c => c.Suit == SuitType.Diamonds).ToString("N0") + "D";
+            suits[2]  = cards.Count(c => c.Suit == SuitType.Hearts).ToString("N0") + "H";
+            suits[3]  = cards.Count(c => c.Suit == SuitType.Spades).ToString("N0") + "S";
+
+            var orig = suits.OrderByDescending(s => s).Select(x => x.Substring(1, 1)).ToArray();
+            var subs = new string[4] { "W", "X", "Y", "Z" };
+
+            var newLabels = new List<string>();
+            cards.ForEach(c => {
+                var rank = c.Code.Substring(0, 1);
+                var suit = c.Code.Substring(1, 1);
+                for (int i = 0; i < 4; i++) {
+                    suit = suit.Replace(orig[i], subs[i]);
+                }
+                newLabels.Add(suit + rank);
+            });
+
+            var newLabel = String.Join("", newLabels.OrderBy(l => l));
+
+            return newLabel;
         }
 
         private int ScoreHand(IScoreSheet scoreSheet, List<Card> cards) {

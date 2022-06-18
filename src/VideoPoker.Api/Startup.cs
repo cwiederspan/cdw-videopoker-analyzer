@@ -40,6 +40,9 @@ namespace VideoPoker.Api {
             this.AllHands = scorer.ScoreAllHands(new StandardNineSixScoreSheet());
             this.AllHandsLoadTime = stopwatch.Elapsed;
             System.Diagnostics.Debug.WriteLine("Generating all hands took " + this.AllHandsLoadTime.TotalSeconds.ToString("F2") + " seconds!");
+            
+            System.Diagnostics.Debug.WriteLine("There are " + this.AllHands.Count() + " total hands!");
+            System.Diagnostics.Debug.WriteLine("There are " + this.AllHands.Select(h => h.Label).Distinct().Count() + " unique hands!");
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -78,6 +81,21 @@ namespace VideoPoker.Api {
 
                         string holdPattern = Convert.ToString(i, 2).PadLeft(5, '0');
 
+                        // Precalculate the hold pattern values
+                        var hold0 = (holdPattern.Substring(0, 1) == "1");
+                        var hold1 = (holdPattern.Substring(1, 1) == "1");
+                        var hold2 = (holdPattern.Substring(2, 1) == "1");
+                        var hold3 = (holdPattern.Substring(3, 1) == "1");
+                        var hold4 = (holdPattern.Substring(4, 1) == "1");
+
+                        var matchingHands = this.AllHands
+                            .Where(h => h.Contains(cards[0]) == hold0)
+                            .Where(h => h.Contains(cards[1]) == hold1)
+                            .Where(h => h.Contains(cards[2]) == hold2)
+                            .Where(h => h.Contains(cards[3]) == hold3)
+                            .Where(h => h.Contains(cards[4]) == hold4)
+                            .ToList();
+
                         // If holding, must include that card. If discarding, must NOT include that card.
                         //List<Hand> matchingHands = (
                         //    from h in this.AllHands
@@ -96,21 +114,6 @@ namespace VideoPoker.Api {
                         //    .Where(h => h.Contains(cards[3]) == (holdPattern.Substring(3, 1) == "1"))
                         //    .Where(h => h.Contains(cards[4]) == (holdPattern.Substring(4, 1) == "1"))
                         //    .ToList();
-
-                        // Precalculate the hold pattern values
-                        var hold0 = (holdPattern.Substring(0, 1) == "1");
-                        var hold1 = (holdPattern.Substring(1, 1) == "1");
-                        var hold2 = (holdPattern.Substring(2, 1) == "1");
-                        var hold3 = (holdPattern.Substring(3, 1) == "1");
-                        var hold4 = (holdPattern.Substring(4, 1) == "1");
-
-                        var matchingHands = this.AllHands
-                            .Where(h => h.Contains(cards[0]) == hold0)
-                            .Where(h => h.Contains(cards[1]) == hold1)
-                            .Where(h => h.Contains(cards[2]) == hold2)
-                            .Where(h => h.Contains(cards[3]) == hold3)
-                            .Where(h => h.Contains(cards[4]) == hold4)
-                            .ToList();
 
                         double score = matchingHands.Average(x => x.Score);
 

@@ -10,12 +10,19 @@ namespace VideoPoker.Api.Models {
         public readonly List<Card> Cards;
 
         public readonly int Score;
+
+        public readonly string Label;
         
         public Hand(List<Card> cards, int score) {
             this.Cards = cards;
             this.Score = score;
         }
-
+        
+        public Hand(List<Card> cards, int score, string label) {
+            this.Cards = cards;
+            this.Score = score;
+            this.Label = label;
+        }
 
         public bool Contains(string cardCode) {
 
