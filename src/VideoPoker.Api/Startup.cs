@@ -64,6 +64,12 @@ namespace VideoPoker.Api {
                     await context.Response.WriteAsync(builder.ToString());
                 });
 
+                endpoints.MapGet("/data", async context => {
+                    foreach (var hand in this.AllHands) {
+                        await context.Response.WriteAsync(hand.ToString() + "\n");
+                    }
+                });
+
                 // Setup a route to hit the Analyze API
                 endpoints.MapGet("/analyze", async context => {
 
@@ -88,6 +94,7 @@ namespace VideoPoker.Api {
                         var hold3 = (holdPattern.Substring(3, 1) == "1");
                         var hold4 = (holdPattern.Substring(4, 1) == "1");
 
+                        // If holding, must include that card. If discarding, must NOT include that card.
                         var matchingHands = this.AllHands
                             .Where(h => h.Contains(cards[0]) == hold0)
                             .Where(h => h.Contains(cards[1]) == hold1)

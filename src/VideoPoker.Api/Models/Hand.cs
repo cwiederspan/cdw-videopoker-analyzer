@@ -28,5 +28,10 @@ namespace VideoPoker.Api.Models {
 
             return this.Cards.Exists(x => x.Code == cardCode);
         }
+
+        public override string ToString() {
+
+            return $"{String.Join(",", this.Cards.Select(c => c.Code))}_{this.Label}_{this.Score}";
+        }
     }
 }
